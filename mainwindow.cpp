@@ -341,7 +341,6 @@ void init_translations()
     num_translations++;
 }
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -352,13 +351,6 @@ MainWindow::MainWindow(QWidget *parent)
     he2 = new rv_hex_edit(this);
 
     he1->setMinimumWidth(930);
-
-//    he1->setMaximumWidth(he1->get_total_width()+40);
-
-//    he1->setMinimumHeight(he1->get_total_height());
-
-//    he2->setMaximumWidth(he1->get_total_width()+40);
-//    he2->setMinimumHeight(he2->get_total_height());
 
     ui->horizontal_Layout_hex1->addWidget(he1);
     ui->horizontal_Layout_hex2->addWidget(he2);

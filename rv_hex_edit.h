@@ -168,7 +168,6 @@ public:
     struct      rv_hv_selection selection_paste;
     unsigned    char *selection_paste_data;
 
-
     bool        show_col_ascii;
     bool        show_infoline;
     bool        show_grid;
