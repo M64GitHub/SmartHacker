@@ -28,9 +28,6 @@ public:
 
     QSerialPort com;
 
-    ByteBuffer buf_raw;
-    ByteBuffer buf_decrypted;
-
     DlmsApdu   apdu;
 
 public slots:
@@ -39,8 +36,9 @@ public slots:
 
     void parse_raw();
 
-    void decrypt();
-    void decode();
+    void decrypt_apdu();
+    void decode_apdu();
+
     void serial_changed(QString s);
     void debug_log(QString s);
 

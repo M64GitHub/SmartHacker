@@ -15,32 +15,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->horizontal_Layout_hex1->addWidget(he1);
     ui->horizontal_Layout_hex2->addWidget(he2);
 
-// blue
-//  color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-//  color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
-
-// green
-//    he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
-//    he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
-
-// pink
-//    he2->color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-//    he2->color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
-
     connect(ui->pushButton_read, SIGNAL(clicked()), this, SLOT(read_serial()));
-    connect(ui->pushButton_decrypt, SIGNAL(clicked()), this, SLOT(decrypt()));
+    connect(ui->pushButton_decrypt, SIGNAL(clicked()), this, SLOT(decrypt_apdu()));
+    connect(ui->pushButton_decode, SIGNAL(clicked()), this, SLOT(decode_apdu()));
+    connect(ui->pushButton_set_raw, SIGNAL(clicked()), this, SLOT(set_raw_from_text()));
+
     connect(ui->m_serialPortComboBox, SIGNAL(currentIndexChanged(QString)),
             this, SLOT(serial_changed(QString)));
 
     connect(ui->spinBox_enc_from, SIGNAL(valueChanged(int)), this , SLOT(spinbox_enc_changed()));
     connect(ui->spinBox_enc_to, SIGNAL(valueChanged(int)), this , SLOT(spinbox_enc_changed()));
-
-    connect(ui->pushButton_decode, SIGNAL(clicked()), this, SLOT(decode()));
-
-    connect(ui->pushButton_set_raw, SIGNAL(clicked()), this, SLOT(set_raw_from_text()));
-
-    // --
-
     connect(he1, SIGNAL(selection_changed(unsigned int, unsigned int)),
             this, SLOT(he1_selection_changed(unsigned int, unsigned int)));
 
@@ -119,19 +103,6 @@ void MainWindow::SetEncSelection(int pos, int len)
                          "RANGE TO DECRYPT"
                          );
     he1->viewport()->repaint();
-
-
-    // blue
-    //  color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-    //  color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
-
-    // green
-    //    he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
-    //    he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
-
-    // pink
-    //    he2->color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-    //    he2->color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
 }
 
 void MainWindow::read_serial()
@@ -149,20 +120,20 @@ void MainWindow::read_serial()
         com.waitForReadyRead(100);
     }
 
-    buf_raw.init(buffer.length());
+    apdu.buf_raw.init(buffer.length());
 
     for(int i=0; i<buffer.length(); i++) {
-        buf_raw.buf()[i] = buffer.data()[i];
+        apdu.buf_raw.buf()[i] = buffer.data()[i];
     }
 
     // now buf_raw and buffer contain the same data
 
-    he1->set_data_buffer(buf_raw.buf(), buf_raw.len());
+    he1->set_data_buffer(apdu.buf_raw.buf(), apdu.buf_raw.len());
 
-    ui->spinBox_enc_from->setMaximum(buf_raw.len());
-    ui->spinBox_enc_to->setMaximum(buf_raw.len());
+    ui->spinBox_enc_from->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_enc_to->setMaximum(apdu.buf_raw.len());
 
-    ui->spinBox_enc_from->setValue((int)(ENC_DATA_OFFS));
+    ui->spinBox_enc_from->setValue((int)(26));
     ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
 
     parse_raw();
@@ -177,21 +148,21 @@ void MainWindow::set_raw_from_text()
     ui->textEdit_txt->append("set raw from text: " + ui->textEdit_raw->toPlainText());
     ui->textEdit_txt->append("raw len: " + QString::number(buffer.length()));
 
-    buf_raw.init(buffer.length());
+    apdu.buf_raw.init(buffer.length());
 
     for(int i=0; i<buffer.length(); i++) {
-        buf_raw.buf()[i] = buffer.data()[i];
+        apdu.buf_raw.buf()[i] = buffer.data()[i];
     }
 
     // now buf_raw and buffer contain the same data
 
-    he1->set_data_buffer(buf_raw.buf(), buf_raw.len());
+    he1->set_data_buffer(apdu.buf_raw.buf(), apdu.buf_raw.len());
     he1->viewport()->repaint();
 
-    ui->spinBox_enc_from->setMaximum(buf_raw.len());
-    ui->spinBox_enc_to->setMaximum(buf_raw.len());
+    ui->spinBox_enc_from->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_enc_to->setMaximum(apdu.buf_raw.len());
 
-    ui->spinBox_enc_from->setValue((int)(ENC_DATA_OFFS));
+    ui->spinBox_enc_from->setValue(26);
     ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
 
 }
@@ -210,23 +181,10 @@ void MainWindow::parse_raw()
             break;
         }
     }
-    he1->add_color_range((int)ENC_DATA_OFFS, (int)buf_raw.len()-2 - 1,
+    he1->add_color_range((int)26, (int)apdu.buf_raw.len()-2 - 1,
                          QColor(0xb0, 0xd0, 0xff),
                          QColor(0x20, 0x20, 0x20),
                          "ENCRYPTED APDU");
-
-    // blue
-    //  color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-    //  color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
-
-    // green
-    //    he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
-    //    he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
-
-    // pink
-    //    he2->color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
-    //    he2->color_bg2_vals  = QColor(0xe0, 0xd8, 0xe8);
-
 
     // -- MBUS START
     for(int i=0; i<he1->color_ranges.size(); i++) {
@@ -272,7 +230,7 @@ void MainWindow::parse_raw()
             break;
         }
     }
-    he1->add_color_range(buf_raw.len()-2, buf_raw.len()-2,
+    he1->add_color_range(apdu.buf_raw.len()-2, apdu.buf_raw.len()-2,
                          // QColor(0xec, 0x40, 0x7a),
                           QColor(0xf0, 0x62, 0x92),
                          QColor(0xff, 0xff, 0xff),
@@ -285,7 +243,7 @@ void MainWindow::parse_raw()
             break;
         }
     }
-    he1->add_color_range(buf_raw.len()-1, buf_raw.len()-1,
+    he1->add_color_range(apdu.buf_raw.len()-1, apdu.buf_raw.len()-1,
                          QColor(0xf5, 0x7c, 0x00),
                          QColor(0xff, 0xff, 0xff),
                          "MBUS STOP");
@@ -293,66 +251,30 @@ void MainWindow::parse_raw()
     spinbox_enc_changed();
 }
 
-void MainWindow::decrypt()
+void MainWindow::decrypt_apdu()
 {
-    unsigned char tag[16];
-    unsigned char iv[12];
-
-    unsigned char *buf = buf_raw.buf();
-
-    unsigned char key[] = {
-        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F };
-
-    unsigned char aad = 0x30;
-
-    // create iv
-    for(int i=0;i<8;i++)
-        iv[i] = buf[SYSTEM_TITLE_OFFS+i];
-    for(int i=0;i<4;i++)
-        iv[i+8] = buf[FRAME_CTR_OFFS+i];
-
-    gcm_context ctx;
-
     QByteArray key_input = QByteArray::fromHex(QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
-
-    // gcm_setkey(&ctx, key, 16);
-    gcm_setkey(&ctx,(unsigned char *) key_input.data(), 16);
+    unsigned char *key = (unsigned char *) key_input.data();
 
     int decrypted_len = ui->spinBox_enc_to->text().toUInt() - ui->spinBox_enc_from->text().toUInt();
 
-    buf_decrypted.init(decrypted_len);
+    apdu.decrypt(11, 
+                 22, 
+                 26, 
+                 26 + decrypted_len,
+                 key);
 
-    he2->set_data_buffer(buf_decrypted.buf(), decrypted_len);
+    he2->set_data_buffer(apdu.buf_decrypted.buf(), decrypted_len);
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
-
-    gcm_crypt_and_tag(
-        &ctx,
-        DECRYPT,
-        iv, 12,
-        &aad, 1,
-        buf + ui->spinBox_enc_from->text().toUInt(),
-        buf_decrypted.buf(),
-        decrypted_len,
-        tag, 16);
-
     he2->viewport()->repaint();
 
-    printf("\nTAG:\n");
-    for(int i=0; i<16; i++) {
-        printf("%02X", tag[i]);
-    }
-    printf("\n\n");
-    // decrypted[228] = 0xff;
-    buf_decrypted.write_at(228, 0xff);
-
-    ui->textEdit_txt->append("decrypted len: " + QString::number(buf_decrypted.len()));
+    ui->textEdit_txt->append("decrypted len: " + QString::number(apdu.buf_decrypted.len()));
 }
 
-void MainWindow::decode()
+void MainWindow::decode_apdu()
 {
-    apdu.scan_octetstrings(buf_decrypted.buf(), buf_decrypted.len());
+    apdu.decode();
 
     QString s;
     for(int i=0; i<apdu.num_entries; i++) {

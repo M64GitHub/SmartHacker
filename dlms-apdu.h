@@ -10,24 +10,9 @@ extern "C" {
 
 #include "bytebuffer.h"
 
-#define MAX_FRAMESIZE     512
-#define MIN_FRAMESIZE     200
-
 #define MAX_ENTRIES        64 
 #define MAX_UNITS           5
 #define MAX_TRANSLATIONS   64
-
-#define MBUS_START_OFFS     0
-#define MBUS_START_LEN      4
-
-#define SYSTEM_TITLE_OFFS  11
-#define SYSTEM_TITLE_LEN    8
-
-#define FRAME_CTR_OFFS     22
-#define FRAME_CTR_LEN       4
-
-#define ENC_DATA_OFFS      26
-#define ENC_DATA_END_OFFS  -2
 
 // -- apdu data
 
@@ -67,7 +52,8 @@ public:
     void init_units();
     void init_translations();
 
-    int read_apdu_entry(unsigned char *decr, apdu_entry *e);
+    int read_apdu_entry(unsigned char *decr, 
+                        apdu_entry *e);
     char *get_unit(unsigned char id);
     char *translate(char *id);
 
@@ -75,16 +61,31 @@ public:
     void read_timestamp(unsigned char *p, char *d);
     void print_apdu_entry(apdu_entry *e);
 
-    void scan_octetstrings(unsigned char *p, int maxlen);
+    void scan_octetstrings(unsigned char *p, 
+                           int maxlen);
     void print_entries();
+
+    void set_enc_params(offset offs_sys_title,
+                        offset offs_frame_ctr,
+                        offset encrypted_block_end,
+                        offset offs_enc_data);
+
+    void decrypt(offset sys_title,
+                 offset frame_ctr,
+                 offset encrypted_block_start,
+                 offset encrypted_block_end,
+                 unsigned char *key);
+
+    void decode();
 
     apdu_entry entries[MAX_ENTRIES];
     int  num_entries = 0;
 
+    ByteBuffer buf_raw;
+    ByteBuffer buf_decrypted;
+
 private:
-
-    dlms_parameters dlms;
-
+    dlms_parameters decrypt_params;
 
     unit    units[MAX_UNITS];
     int     num_units = 0;

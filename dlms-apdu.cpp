@@ -297,3 +297,49 @@ void DlmsApdu::init_translations()
     num_translations++;
 }
 
+void DlmsApdu::decrypt(offset sys_title,
+                       offset frame_ctr,
+                       offset encrypted_block_start,
+                       offset encrypted_block_end,
+                       unsigned char *key)
+{
+    unsigned char tag[16];
+    unsigned char iv[12];
+
+    unsigned char *buf = buf_raw.buf();
+
+    // create iv
+    for(int i=0;i<8;i++)
+        iv[i] = buf[sys_title+i];
+    for(int i=0;i<4;i++)
+        iv[i+8] = buf[frame_ctr+i];
+
+    gcm_context ctx;
+
+    gcm_setkey(&ctx, key, 16);
+
+    int decrypted_len = encrypted_block_end - encrypted_block_start;
+
+    buf_decrypted.init(decrypted_len);
+
+    gcm_crypt_and_tag(
+        &ctx,
+        DECRYPT,
+        iv, 12,
+        0, 0, 
+        buf + encrypted_block_start,
+        buf_decrypted.buf(),
+        decrypted_len,
+        tag, 16);
+
+    printf("\nTAG:\n");
+    for(int i=0; i<16; i++) {
+        printf("%02X", tag[i]);
+    }
+    printf("\n\n");
+}
+
+void DlmsApdu::decode()
+{
+    scan_octetstrings(buf_decrypted.buf(), buf_decrypted.len());
+}
