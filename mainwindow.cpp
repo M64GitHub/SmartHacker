@@ -394,18 +394,13 @@ void MainWindow::result_list_clicked(int i)
 {
     ui->textEdit_txt->clear();
 
+
+    if(i >= autohacker.num_results) return;
+
+    if(i < 0) return;
+
     debug_log("[autohacker] showing result " + 
               QString::number(i));
-
-    if(i >= autohacker.num_results) {
-        debug_log("[main] INDEX ERROR!\n");
-        return;
-    }
-
-    if(i < 0) {
-        debug_log("[main] INDEX ERROR!\n");
-        return;
-    }
 
     QByteArray key_input = QByteArray::fromHex(
             QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
@@ -425,5 +420,19 @@ void MainWindow::result_list_clicked(int i)
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
 
-    he2->viewport()->repaint();
+        debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
+                  + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
+
+        debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
+                  + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
+
+        debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
+                  + QString::number(autohacker.results[i].offs_ENC_DATA));
+
+        debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
+                  + QString::number(autohacker.results[i].len_ENC_DATA));
+
+   he2->viewport()->repaint();
+
+   // decode_apdu();
 }
