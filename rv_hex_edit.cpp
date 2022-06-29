@@ -196,6 +196,15 @@ void rv_hex_edit::paintEvent(QPaintEvent *event)
         }
 
 
+        // -- paint ascii col --
+        if(event->region().boundingRect().intersects(
+                    QRect(
+                    (16*cell_geometry.width + header_offs_width + MARGIN_LEFT),
+                    (i*line_height + header_col_height + MARGIN_TOP),
+                        16 * 9, cell_geometry.height
+                    )))
+        paint_asc_col(p, i);
+
     }
 
     paint_grid(p);
@@ -831,12 +840,12 @@ void rv_hex_edit::paint_grid(QPainter *painter)
                       MARGIN_TOP + header_col_height + num_lines * line_height
                       );
 
-//    painter->drawLine(MARGIN_LEFT + header_offs_width + 16 * cell_geometry.width
-//            + lmargin_col_ascii + 2 + 16*9 + 2,
-//                      MARGIN_TOP,
-//                      MARGIN_LEFT + header_offs_width + 16 * cell_geometry.width
-//                                  + lmargin_col_ascii + 2 + 16*9 + 2,
-//                      viewport()->height() - MARGIN_TOP);
+   painter->drawLine(MARGIN_LEFT + header_offs_width + 16 * cell_geometry.width
+           + lmargin_col_ascii + 2 + 16*9 + 2,
+                     MARGIN_TOP,
+                     MARGIN_LEFT + header_offs_width + 16 * cell_geometry.width
+                                 + lmargin_col_ascii + 2 + 16*9 + 2,
+                     viewport()->height() - MARGIN_TOP);
 }
 
 void rv_hex_edit::paint_range_desc(QPainter *painter, int i)

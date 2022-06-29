@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     he1 = new rv_hex_edit(this);
     he2 = new rv_hex_edit(this);
 
-    he1->setMinimumWidth(930);
+    he1->setMinimumWidth(1070);
 
     ui->horizontal_Layout_hex1->addWidget(he1);
     ui->horizontal_Layout_hex2->addWidget(he2);
