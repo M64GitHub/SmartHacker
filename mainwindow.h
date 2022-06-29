@@ -8,6 +8,7 @@
 #include "bytebuffer.h"
 
 #include "dlms-apdu.h"
+#include "autohacker.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,7 +29,8 @@ public:
 
     QSerialPort com;
 
-    DlmsApdu   apdu;
+    DlmsApdu    apdu;
+    AutoHacker  autohacker; 
 
 public slots:
     void read_serial();
@@ -44,6 +46,10 @@ public slots:
 
     void spinbox_enc_changed();
     void he1_selection_changed(unsigned int from, unsigned int to);
+
+    void autohack();
+
+    void result_list_clicked(int i);
 
     // void raw_selection_changed();
 

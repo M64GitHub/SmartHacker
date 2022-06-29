@@ -341,5 +341,6 @@ void DlmsApdu::decrypt(offset sys_title,
 
 void DlmsApdu::decode()
 {
+    num_entries = 0;
     scan_octetstrings(buf_decrypted.buf(), buf_decrypted.len());
 }

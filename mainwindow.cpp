@@ -15,18 +15,30 @@ MainWindow::MainWindow(QWidget *parent)
     ui->horizontal_Layout_hex1->addWidget(he1);
     ui->horizontal_Layout_hex2->addWidget(he2);
 
-    connect(ui->pushButton_read, SIGNAL(clicked()), this, SLOT(read_serial()));
-    connect(ui->pushButton_decrypt, SIGNAL(clicked()), this, SLOT(decrypt_apdu()));
-    connect(ui->pushButton_decode, SIGNAL(clicked()), this, SLOT(decode_apdu()));
-    connect(ui->pushButton_set_raw, SIGNAL(clicked()), this, SLOT(set_raw_from_text()));
+    connect(ui->pushButton_read, SIGNAL(clicked()), 
+            this, SLOT(read_serial()));
+    connect(ui->pushButton_decrypt, SIGNAL(clicked()), 
+            this, SLOT(decrypt_apdu()));
+    connect(ui->pushButton_decode, SIGNAL(clicked()), 
+            this, SLOT(decode_apdu()));
+    connect(ui->pushButton_set_raw, SIGNAL(clicked()), 
+            this, SLOT(set_raw_from_text()));
+    connect(ui->pushButton_Autohack, SIGNAL(clicked()), 
+            this, SLOT(autohack()));
 
     connect(ui->m_serialPortComboBox, SIGNAL(currentIndexChanged(QString)),
             this, SLOT(serial_changed(QString)));
 
-    connect(ui->spinBox_enc_from, SIGNAL(valueChanged(int)), this , SLOT(spinbox_enc_changed()));
-    connect(ui->spinBox_enc_to, SIGNAL(valueChanged(int)), this , SLOT(spinbox_enc_changed()));
+    connect(ui->spinBox_enc_from, SIGNAL(valueChanged(int)), 
+            this , SLOT(spinbox_enc_changed()));
+    connect(ui->spinBox_enc_to, SIGNAL(valueChanged(int)), 
+            this , SLOT(spinbox_enc_changed()));
+
     connect(he1, SIGNAL(selection_changed(unsigned int, unsigned int)),
             this, SLOT(he1_selection_changed(unsigned int, unsigned int)));
+
+    connect(ui->listWidget_autohack_results, SIGNAL(currentRowChanged(int)),
+            this, SLOT(result_list_clicked(int)));
 
     const auto infos = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : infos)
@@ -143,13 +155,14 @@ void MainWindow::set_raw_from_text()
 {
     QByteArray buffer;
 
-    buffer = QByteArray::fromHex(QByteArray::fromStdString(ui->textEdit_raw->toPlainText().toStdString()));
+    buffer = QByteArray::fromHex(
+            QByteArray::fromStdString(
+                ui->textEdit_raw->toPlainText().toStdString()));
     
-    ui->textEdit_txt->append("set raw from text: " + ui->textEdit_raw->toPlainText());
-    ui->textEdit_txt->append("raw len: " + QString::number(buffer.length()));
+    debug_log("[main] set raw from text: " + ui->textEdit_raw->toPlainText());
 
     apdu.buf_raw.init(buffer.length());
-
+   
     for(int i=0; i<buffer.length(); i++) {
         apdu.buf_raw.buf()[i] = buffer.data()[i];
     }
@@ -161,11 +174,7 @@ void MainWindow::set_raw_from_text()
 
     ui->spinBox_enc_from->setMaximum(apdu.buf_raw.len());
     ui->spinBox_enc_to->setMaximum(apdu.buf_raw.len());
-
-    ui->spinBox_enc_from->setValue(26);
-    ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
-
-}
+ }
 
 void MainWindow::parse_raw()
 {
@@ -253,10 +262,13 @@ void MainWindow::parse_raw()
 
 void MainWindow::decrypt_apdu()
 {
-    QByteArray key_input = QByteArray::fromHex(QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
+    QByteArray key_input = QByteArray::fromHex(
+            QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
+
     unsigned char *key = (unsigned char *) key_input.data();
 
-    int decrypted_len = ui->spinBox_enc_to->text().toUInt() - ui->spinBox_enc_from->text().toUInt();
+    int decrypted_len = ui->spinBox_enc_to->text().toUInt() - 
+        ui->spinBox_enc_from->text().toUInt();
 
     apdu.decrypt(11, 
                  22, 
@@ -269,7 +281,11 @@ void MainWindow::decrypt_apdu()
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
     he2->viewport()->repaint();
 
-    ui->textEdit_txt->append("decrypted len: " + QString::number(apdu.buf_decrypted.len()));
+    debug_log("decrypted len: " 
+              + QString::number(apdu.buf_decrypted.len()) + " (0x" 
+              + QString::number(apdu.buf_decrypted.len(), 16)
+              + ")"
+              );
 }
 
 void MainWindow::decode_apdu()
@@ -284,4 +300,116 @@ void MainWindow::decode_apdu()
             "UNIT: " + QString::fromLocal8Bit(apdu.entries[i].unit) + "\n";
         debug_log(s);
     }
+}
+
+void MainWindow::autohack()
+{
+    debug_log("\n[main] started autohacker ...");
+
+    ui->listWidget_autohack_results->clear();
+
+    if(!apdu.buf_raw.has_data) {
+        debug_log("[autohack] read data from serial first, or paste into text field");
+        return;
+    }
+
+    QByteArray key_input = QByteArray::fromHex(
+            QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
+
+    unsigned char *key = (unsigned char *) key_input.data();
+
+    debug_log("[autohacker] working with raw apdu: len: " +
+        QString::number(apdu.buf_raw.len()));
+
+    debug_log("[autohacker] working with key: " + ui->lineEdit_key->text());
+
+    debug_log("[autohack] autohacker initialized (" +
+                QString::number(ui->spinBox_STmin->value()) + ", " +
+                QString::number(ui->spinBox_STmax->value()) + ", " +
+                QString::number(ui->spinBox_SPCenc->value()) + ", " +
+                QString::number(ui->spinBox_4THR->value()) + ", " +
+                QString::number(ui->checkBox_Decode->isChecked()) + 
+              ") ..."
+              );
+        
+
+    autohacker.hack(
+        &apdu, 
+        AUTO_HACKER_MAX_RESULTS,
+        ui->spinBox_STmin->value(),
+        ui->spinBox_STmax->value(),
+        ui->spinBox_SPCenc->value(),
+        ui->spinBox_4THR->value(),
+        key,
+        ui->checkBox_Decode->isChecked());
+
+    if(!autohacker.num_results) {
+        debug_log("[autohacker] NO RESULT! Finished after " 
+                  + QString::number(autohacker.iteration) 
+                  + " iterations");
+        return;
+    }
+
+    he2->set_data_buffer(apdu.buf_decrypted.buf(), apdu.buf_decrypted.len());
+    he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
+    he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
+    he2->viewport()->repaint();
+
+    
+    debug_log("\n[autohacker] FOUND " + 
+              QString::number(autohacker.num_results) + 
+              "RESULTs "); 
+
+
+    // debug_log("\n[autohacker] FOUND RESULT in iteration " + 
+    //     QString::number(autohacker.iteration) + ":");
+    for(int i=0; i< autohacker.num_results; i++) {
+        debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
+                  + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
+
+        debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
+                  + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
+
+        debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
+                  + QString::number(autohacker.results[i].offs_ENC_DATA));
+
+        debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
+                  + QString::number(autohacker.results[i].len_ENC_DATA));
+
+        QString s = "Result " + QString::number(i);
+        ui->listWidget_autohack_results->addItem(s);
+    }
+}
+
+void MainWindow::result_list_clicked(int i)
+{
+    ui->textEdit_txt->clear();
+
+    debug_log("[autohacker] showing result " + 
+              QString::number(i));
+
+    if(i >= autohacker.num_results) {
+        debug_log("[main] INDEX ERROR!\n");
+        return;
+    }
+
+    QByteArray key_input = QByteArray::fromHex(
+            QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
+
+    unsigned char *key = (unsigned char *) key_input.data();
+
+    apdu.decrypt(
+            autohacker.results[i].offs_SYSTEM_TITLE,
+            autohacker.results[i].offs_FRAME_COUNTER,
+            autohacker.results[i].offs_ENC_DATA,
+            autohacker.results[i].len_ENC_DATA,
+            key);
+
+    he2->set_data_buffer(apdu.buf_decrypted.buf(), 
+                         autohacker.results[i].len_ENC_DATA);
+
+    he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
+    he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
+
+    he2->viewport()->repaint();
 }

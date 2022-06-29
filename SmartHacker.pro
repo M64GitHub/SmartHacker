@@ -8,6 +8,7 @@ CONFIG += c++11
 SOURCES += \
     aes-gcm.c \
     aes.c \
+    autohacker.cpp \
     bytebuffer.cpp \
     dlms-apdu.cpp \
     gcm.c \
@@ -19,6 +20,7 @@ SOURCES += \
 HEADERS += \
     aes-gcm.h \
     aes.h \
+    autohacker.h \
     bytebuffer.h \
     detect_platform.h \
     dlms-apdu.h \

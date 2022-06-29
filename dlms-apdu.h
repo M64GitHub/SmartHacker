@@ -41,6 +41,7 @@ typedef struct s_dlms_parameters {
     offset  offs_SYSTEM_TITLE;
     offset  offs_FRAME_COUNTER;
     offset  offs_ENC_DATA;
+    offset  len_ENC_DATA;
 } dlms_parameters;
 
 class DlmsApdu {
