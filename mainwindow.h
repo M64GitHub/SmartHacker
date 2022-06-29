@@ -4,15 +4,10 @@
 #include <QMainWindow>
 #include <QSerialPort>
 #include <QSerialPortInfo>
-
 #include "rv_hex_edit.h"
+#include "bytebuffer.h"
 
-extern "C" {
-    #include "gcm.h"
-    #include "detect_platform.h"
-    #include <math.h>
-}
-
+#include "dlms-apdu.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,10 +27,18 @@ public:
     rv_hex_edit *he2;
 
     QSerialPort com;
-    QByteArray buffer;
+
+    ByteBuffer buf_raw;
+    ByteBuffer buf_decrypted;
+
+    DlmsApdu   apdu;
 
 public slots:
     void read_serial();
+    void set_raw_from_text();
+
+    void parse_raw();
+
     void decrypt();
     void decode();
     void serial_changed(QString s);

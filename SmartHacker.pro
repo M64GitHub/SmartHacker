@@ -8,6 +8,8 @@ CONFIG += c++11
 SOURCES += \
     aes-gcm.c \
     aes.c \
+    bytebuffer.cpp \
+    dlms-apdu.cpp \
     gcm.c \
     main.cpp \
     mainwindow.cpp \
@@ -17,7 +19,9 @@ SOURCES += \
 HEADERS += \
     aes-gcm.h \
     aes.h \
+    bytebuffer.h \
     detect_platform.h \
+    dlms-apdu.h \
     gcm.h \
     mainwindow.h \
     rv_hex_edit.h \

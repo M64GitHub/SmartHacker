@@ -1,346 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-
-#define MAX_FRAMESIZE     512
-#define MIN_FRAMESIZE     200
-
-#define MAX_UNITS           5
-#define MAX_TRANSLATIONS   64
-
-#define MBUS_START_OFFS     0
-#define MBUS_START_LEN      4
-
-#define SYSTEM_TITLE_OFFS  11
-#define SYSTEM_TITLE_LEN    8
-
-#define FRAME_CTR_OFFS     22
-#define FRAME_CTR_LEN       4
-
-#define ENC_DATA_OFFS      26
-#define ENC_DATA_END_OFFS  -2
-
-typedef struct s_entry {
-    char name[32];
-    int  offset;
-    char id[32];
-    char unit[32];
-    char strval[32];
-} entry;
-
-typedef struct s_unit {
-    int id;
-    char name[32];
-} unit;
-
-entry entries[64];
-int num_entries = 0;
-char datetime[128];
-
-unsigned char RAW[256+128];
-int RAW_len = 0;
-
-unsigned char decrypted[256+128];
-int decrypted_len = 0;
-
-unit units[MAX_UNITS];
-
-typedef struct s_translation {
-    char id[32];
-    char translation[32];
-} translation;
-
-translation translations[64];
-
-int num_translations = 0;
-
-void init_entries()
-{
-    for(int i=0; i<num_entries; i++) {
-        entries[i].id[0] = 0x0;
-        entries[i].name[0] = 0x0;
-        entries[i].unit[0] = 0x0;
-        entries[i].strval[0] = 0x0;
-    }
-    num_entries = 0;
-}
-
-void init_units()
-{
-    units[0].id = 0x1e;
-    strcpy(units[0].name, "Wh");
-
-    units[1].id = 0x1b;
-    strcpy(units[1].name, "W");
-
-    units[2].id = 0x23;
-    strcpy(units[2].name, "V");
-
-    units[3].id = 0x21;
-    strcpy(units[3].name, "A");
-
-    units[4].id = 0xff;
-    strcpy(units[4].name, " ");
-}
-
-char *get_unit(unsigned char id)
-{
-    for(int i=0; i<MAX_UNITS; i++) {
-        if(id == units[i].id) return units[i].name;
-    }
-
-    return 0; // unit not found
-}
-
-char *translate(char *id)
-{
-    for(int i=0; i<num_translations; i++) {
-        if(!strcmp(translations[i].id, id)) {
-            return translations[i].translation;
-        }
-    }
-
-    return 0;
-}
-
-int read_entry(unsigned char *decr, entry *e)
-{
-    int offs = e->offset;
-    unsigned char *p = decr;
-
-    // -- read octet string: .id
-    if(p[offs+0] != 0x09) {
-        printf("ERROR @%04x: data type != octetstring (0x09): %02x\n",
-               offs, p[offs+0]);
-        return 1;
-    }
-
-    char buf[64];
-    e->id[0] = 0x0;
-    int octetlen = p[offs+1];
-    for(int i=0; i<octetlen; i++) {
-        if(i!=octetlen-1)
-            sprintf(buf, "%d.", p[offs+2+i]);
-        else
-            sprintf(buf, "%d", p[offs+2+i]);
-        strcat(e->id, buf);
-    }
-    offs += 2 + octetlen;
-
-    // -- read data
-    // 0x06 : UInt32, or 0x12: UInt16
-
-    double val = 0;
-
-    if( (p[offs+0] != 0x06) && (p[offs+0] != 0x12) ) {
-       printf("ERROR @%04x: data type != UInt32/UInt16 (06/12): %02x\n",
-              offs, p[offs+0]);
-        return 1;
-    }
-
-    if(p[offs+0] == 0x06) {
-        // Uint32
-        val += p[offs+1] << 24;
-        val += p[offs+2] << 16;
-        val += p[offs+3] << 8;
-        val += p[offs+4];
-        offs +=4+1;
-    } else if(p[offs+0] == 0x12) {
-        // Uint16
-        val += p[offs+1] << 8;
-        val += p[offs+2];
-        offs += 2+1;
-    }
-
-    // scale / unit
-    // first skip struct: 0x02, 0x02
-    if( (p[offs+0] != 0x02) && (p[offs+1] != 0x02) ) {
-        printf("ERROR @%04x: no struct found (expected 0x0202)\n", offs);
-        return 1;
-    }
-    offs += 2;
-
-    // read Int8
-    if(p[offs+0] != 0x0F) {
-        printf("ERROR @%04x: no Int8 found (expected 0x0F)\n", offs);
-        return 1;
-    }
-    offs++;
-    // read scaler
-    if(p[offs]) { // if scaler != 0
-        int scaler = p[offs];
-        if(scaler > 127) scaler = scaler - 256;
-
-        // printf("    scaler: %d", scaler);
-        double pot = pow(10.0 , scaler);
-        // printf(", val = val * %f\n", pot);
-        val = val * pot;
-    } /* else printf("skipping scaler ...\n"); */
-
-    snprintf(e->strval, 16, "%.2f", val);
-
-    // unit
-    offs += 2;
-    char *unit;
-
-    if(!(unit=get_unit(p[offs]))) {
-        printf("ERROR @%04x: unit not found for %02x\n",
-               offs, p[offs]);
-        return 1;
-    }
-    strcpy(e->unit, unit);
-
-    char *t = translate(e->id);
-    if(t) strcpy(e->name, t);
-
-    return 0;
-};
-
-void read_timestamp(unsigned char *p, char *d)
-{
-    int year, month, day, hour, minute, second = 0;
-
-    year    = p[0]*256;
-    year    += p[1];
-
-    month   = p[2];
-    day     = p[3];
-
-    hour    = p[5];
-    minute  = p[6];
-    second  = p[7];
-
-    sprintf(d, "%02d.%02d.%4d %02d:%02d:%02d",
-            day, month, year, hour, minute, second);
-}
-
-void print_entry(entry *e)
-{
-//    printf("ID        : %s\n", e->id);
-//    printf("NAME      : %s\n", e->name);
-//    printf("VAL       : %s %s\n", e->strval, e->unit);
-//    printf("\n");
-    char pbuf[128];
-    sprintf(pbuf, "ID        : %s\n", e->id);
-
-    sprintf(pbuf, "NAME      : %s\n", e->name);
-    sprintf(pbuf, "VAL       : %s %s\n", e->strval, e->unit);
-}
-
-void get_time(unsigned char *p)
-{
-    // read datetime
-    read_timestamp(p+6, datetime);
-    printf("Timestamp : %s\n", datetime);
-}
-
-// -- scan functions
-
-void scan_octetstrings(unsigned char *p, int maxlen)
-{
-    // 09 XX (<8) YY (<3)
-
-    int offs = 0;
-    char buf1[4];
-    char buf[64];
-
-    printf("scanning for object IDs ...\n\n");
-
-    while(offs < (maxlen-0x08)) {
-        offs++;
-        if ((p[offs+0] == 0x09) && (p[offs+1] <0x0C) && (p[offs+2] <0x03)  ) {
-            int found_pos = offs;
-            buf[0] = 0x0;
-            int octetlen = p[offs+1];
-            for(int i=0; i<octetlen; i++) {
-                if(i!=octetlen-1)
-                    sprintf(buf1, "%d.", p[offs+2+i]);
-                else
-                    sprintf(buf1, "%d", p[offs+2+i]);
-                strcat(buf, buf1);
-            }
-            offs += 2 + octetlen;
-
-            printf("found: '%s' @ 0x%04x\n", buf, found_pos);
-
-            entry *e = &entries[num_entries];
-            e->offset = found_pos;
-            int rv = read_entry(decrypted, e);
-            if(!rv) num_entries++;
-            else offs = found_pos + 1;
-        }
-    }
-
-    printf("\n");
-}
-
-void print_entries()
-{
-    for(int i=0; i<num_entries; i++) {
-        print_entry(&entries[i]);
-    }
-}
-
-void init_translations()
-{
-    translation *t;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.1.8.0.255");
-    strcpy(t->translation, "Wirkenergie A+");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.2.8.0.255");
-    strcpy(t->translation, "Wirkenergie A-");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.1.7.0.255");
-    strcpy(t->translation, "Momentanleistung P+");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.2.7.0.255");
-    strcpy(t->translation, "Momentanleistung P-");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.32.7.0.255");
-    strcpy(t->translation, "Spannung L1");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.52.7.0.255");
-    strcpy(t->translation, "Spannung L2");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.72.7.0.255");
-    strcpy(t->translation, "Spannung L3");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.31.7.0.255");
-    strcpy(t->translation, "Strom L1");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.51.7.0.255");
-    strcpy(t->translation, "Strom L2");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.71.7.0.255");
-    strcpy(t->translation, "Strom L3");
-    num_translations++;
-
-    t = &translations[num_translations];
-    strcpy(t->id, "1.0.13.7.0.255");
-    strcpy(t->translation, "Leistungsfaktor");
-    num_translations++;
-}
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -354,11 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->horizontal_Layout_hex1->addWidget(he1);
     ui->horizontal_Layout_hex2->addWidget(he2);
-
-    he1->set_data_buffer(RAW, 256);
-
-    he2->set_data_buffer(decrypted, 16);
-    he2->viewport()->repaint();
 
 // blue
 //  color_bg1_vals  = QColor(0xf0, 0xe8, 0xf8);
@@ -382,6 +37,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->pushButton_decode, SIGNAL(clicked()), this, SLOT(decode()));
 
+    connect(ui->pushButton_set_raw, SIGNAL(clicked()), this, SLOT(set_raw_from_text()));
+
     // --
 
     connect(he1, SIGNAL(selection_changed(unsigned int, unsigned int)),
@@ -397,9 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
     com.open(QSerialPort::ReadOnly);
 
     gcm_initialize();
-    init_entries();
-    init_units();
-    init_translations();
 
     debug_log("SmartHacker initialized\n");
 }
@@ -482,12 +136,12 @@ void MainWindow::SetEncSelection(int pos, int len)
 
 void MainWindow::read_serial()
 {
-    buffer.clear();
-
     while(com.bytesAvailable()) {
         com.readAll();
         com.waitForReadyRead(1000);
     }
+
+    QByteArray buffer;
 
     com.waitForReadyRead(6000);
     while(com.bytesAvailable()) {
@@ -495,22 +149,59 @@ void MainWindow::read_serial()
         com.waitForReadyRead(100);
     }
 
-    for(int i=0; i<buffer.length(); i++) {
-        RAW[i] = buffer.data()[i];
-    }
-    he1->set_data_buffer(RAW, buffer.length());
+    buf_raw.init(buffer.length());
 
-    ui->spinBox_enc_from->setMaximum(buffer.length());
-    ui->spinBox_enc_to->setMaximum(buffer.length());
+    for(int i=0; i<buffer.length(); i++) {
+        buf_raw.buf()[i] = buffer.data()[i];
+    }
+
+    // now buf_raw and buffer contain the same data
+
+    he1->set_data_buffer(buf_raw.buf(), buf_raw.len());
+
+    ui->spinBox_enc_from->setMaximum(buf_raw.len());
+    ui->spinBox_enc_to->setMaximum(buf_raw.len());
 
     ui->spinBox_enc_from->setValue((int)(ENC_DATA_OFFS));
     ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
 
+    parse_raw();
+}
+
+void MainWindow::set_raw_from_text()
+{
+    QByteArray buffer;
+
+    buffer = QByteArray::fromHex(QByteArray::fromStdString(ui->textEdit_raw->toPlainText().toStdString()));
+    
+    ui->textEdit_txt->append("set raw from text: " + ui->textEdit_raw->toPlainText());
+    ui->textEdit_txt->append("raw len: " + QString::number(buffer.length()));
+
+    buf_raw.init(buffer.length());
+
+    for(int i=0; i<buffer.length(); i++) {
+        buf_raw.buf()[i] = buffer.data()[i];
+    }
+
+    // now buf_raw and buffer contain the same data
+
+    he1->set_data_buffer(buf_raw.buf(), buf_raw.len());
+    he1->viewport()->repaint();
+
+    ui->spinBox_enc_from->setMaximum(buf_raw.len());
+    ui->spinBox_enc_to->setMaximum(buf_raw.len());
+
+    ui->spinBox_enc_from->setValue((int)(ENC_DATA_OFFS));
+    ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
+
+}
+
+void MainWindow::parse_raw()
+{
     he1->color_bg1_vals = QColor(0x59, 0x69, 0x8d);
     he1->color_bg2_vals = QColor(0x59, 0x69, 0x8d);
     he1->color_hex_vals = QColor(0xff, 0xff, 0xff);
     he1->viewport()->repaint();
-
 
     // -- encr apdu
     for(int i=0; i<he1->color_ranges.size(); i++) {
@@ -519,7 +210,7 @@ void MainWindow::read_serial()
             break;
         }
     }
-    he1->add_color_range((int)ENC_DATA_OFFS, (int)buffer.length()-2 - 1,
+    he1->add_color_range((int)ENC_DATA_OFFS, (int)buf_raw.len()-2 - 1,
                          QColor(0xb0, 0xd0, 0xff),
                          QColor(0x20, 0x20, 0x20),
                          "ENCRYPTED APDU");
@@ -581,7 +272,7 @@ void MainWindow::read_serial()
             break;
         }
     }
-    he1->add_color_range(buffer.length()-2, buffer.length()-2,
+    he1->add_color_range(buf_raw.len()-2, buf_raw.len()-2,
                          // QColor(0xec, 0x40, 0x7a),
                           QColor(0xf0, 0x62, 0x92),
                          QColor(0xff, 0xff, 0xff),
@@ -594,7 +285,7 @@ void MainWindow::read_serial()
             break;
         }
     }
-    he1->add_color_range(buffer.length()-1, buffer.length()-1,
+    he1->add_color_range(buf_raw.len()-1, buf_raw.len()-1,
                          QColor(0xf5, 0x7c, 0x00),
                          QColor(0xff, 0xff, 0xff),
                          "MBUS STOP");
@@ -607,7 +298,7 @@ void MainWindow::decrypt()
     unsigned char tag[16];
     unsigned char iv[12];
 
-    unsigned char *buf = RAW;
+    unsigned char *buf = buf_raw.buf();
 
     unsigned char key[] = {
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
@@ -623,11 +314,16 @@ void MainWindow::decrypt()
 
     gcm_context ctx;
 
-    gcm_setkey(&ctx, key, 16);
+    QByteArray key_input = QByteArray::fromHex(QByteArray::fromStdString(ui->lineEdit_key->text().toStdString()));
 
-    decrypted_len = ui->spinBox_enc_to->text().toUInt() - ui->spinBox_enc_from->text().toUInt();
+    // gcm_setkey(&ctx, key, 16);
+    gcm_setkey(&ctx,(unsigned char *) key_input.data(), 16);
 
-    he2->set_data_buffer(decrypted, decrypted_len);
+    int decrypted_len = ui->spinBox_enc_to->text().toUInt() - ui->spinBox_enc_from->text().toUInt();
+
+    buf_decrypted.init(decrypted_len);
+
+    he2->set_data_buffer(buf_decrypted.buf(), decrypted_len);
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
 
@@ -637,7 +333,7 @@ void MainWindow::decrypt()
         iv, 12,
         &aad, 1,
         buf + ui->spinBox_enc_from->text().toUInt(),
-        decrypted,
+        buf_decrypted.buf(),
         decrypted_len,
         tag, 16);
 
@@ -648,19 +344,22 @@ void MainWindow::decrypt()
         printf("%02X", tag[i]);
     }
     printf("\n\n");
-    decrypted[228] = 0xff;
+    // decrypted[228] = 0xff;
+    buf_decrypted.write_at(228, 0xff);
+
+    ui->textEdit_txt->append("decrypted len: " + QString::number(buf_decrypted.len()));
 }
 
 void MainWindow::decode()
 {
-    scan_octetstrings(decrypted, decrypted_len);
+    apdu.scan_octetstrings(buf_decrypted.buf(), buf_decrypted.len());
 
     QString s;
-    for(int i=0; i<num_entries; i++) {
-        s = "ID: " + QString::fromLocal8Bit(entries[i].id) + "\n" +
-            "NAME: " + QString::fromLocal8Bit(entries[i].name) + "\n" +
-            "VALUE: " + QString::fromLocal8Bit(entries[i].strval) + "\n" +
-            "UNIT: " + QString::fromLocal8Bit(entries[i].unit) + "\n";
+    for(int i=0; i<apdu.num_entries; i++) {
+        s = "ID: " + QString::fromLocal8Bit(apdu.entries[i].id) + "\n" +
+            "NAME: " + QString::fromLocal8Bit(apdu.entries[i].name) + "\n" +
+            "VALUE: " + QString::fromLocal8Bit(apdu.entries[i].strval) + "\n" +
+            "UNIT: " + QString::fromLocal8Bit(apdu.entries[i].unit) + "\n";
         debug_log(s);
     }
 }
