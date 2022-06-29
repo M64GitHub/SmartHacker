@@ -304,6 +304,8 @@ void MainWindow::decode_apdu()
 
 void MainWindow::autohack()
 {
+    ui->textEdit_txt->clear();
+
     debug_log("\n[main] started autohacker ...");
 
     ui->listWidget_autohack_results->clear();
@@ -350,6 +352,13 @@ void MainWindow::autohack()
         return;
     }
 
+    apdu.decrypt(
+            autohacker.results[0].offs_SYSTEM_TITLE,
+            autohacker.results[0].offs_FRAME_COUNTER,
+            autohacker.results[0].offs_ENC_DATA,
+            autohacker.results[0].len_ENC_DATA,
+            key);
+
     he2->set_data_buffer(apdu.buf_decrypted.buf(), apdu.buf_decrypted.len());
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
@@ -389,6 +398,11 @@ void MainWindow::result_list_clicked(int i)
               QString::number(i));
 
     if(i >= autohacker.num_results) {
+        debug_log("[main] INDEX ERROR!\n");
+        return;
+    }
+
+    if(i < 0) {
         debug_log("[main] INDEX ERROR!\n");
         return;
     }
