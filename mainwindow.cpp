@@ -370,6 +370,7 @@ void MainWindow::autohack()
         ui->spinBox_STmin->value(),
         ui->spinBox_STmax->value(),
         ui->spinBox_SPCenc->value(),
+        ui->spinBox_SPCenc->value(),
         ui->spinBox_4THR->value(),
         key,
         ui->checkBox_Decode->isChecked());
@@ -385,7 +386,8 @@ void MainWindow::autohack()
             autohacker.results[0].offs_SYSTEM_TITLE,
             autohacker.results[0].offs_FRAME_COUNTER,
             autohacker.results[0].offs_ENC_DATA,
-            autohacker.results[0].len_ENC_DATA,
+            autohacker.results[0].offs_ENC_DATA + 
+              autohacker.results[0].len_ENC_DATA,
             key);
 
     he2->set_data_buffer(apdu.buf_decrypted.buf(), apdu.buf_decrypted.len());
@@ -440,7 +442,8 @@ void MainWindow::result_list_clicked(int i)
             autohacker.results[i].offs_SYSTEM_TITLE,
             autohacker.results[i].offs_FRAME_COUNTER,
             autohacker.results[i].offs_ENC_DATA,
-            autohacker.results[i].len_ENC_DATA,
+            autohacker.results[i].offs_ENC_DATA + 
+              autohacker.results[i].len_ENC_DATA,
             key);
 
     he2->set_data_buffer(apdu.buf_decrypted.buf(), 

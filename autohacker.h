@@ -15,6 +15,7 @@ public:
               int systitle_min,
               int systitle_max,
               int spce_systitle_framectr_max,
+              int spce_framectr_enc_max,
               int threshold_entries,
               unsigned char *key,
               bool decode);
