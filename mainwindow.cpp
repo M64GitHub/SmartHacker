@@ -472,6 +472,7 @@ void MainWindow::result_list_clicked(int i)
 
     ui->textEdit_decrypted->setText(ba_decrypted.toHex().toUpper());
 
+    decode_apdu();
 }
 
 void MainWindow::set_offs_st()

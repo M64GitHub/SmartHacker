@@ -192,7 +192,7 @@ void DlmsApdu::get_time(unsigned char *p)
 
 // -- scan functions
 
-void DlmsApdu::scan_octetstrings(unsigned char *p, int maxlen)
+int DlmsApdu::scan_octetstrings(unsigned char *p, int maxlen)
 {
     // 09 XX (<8) YY (<3)
 
@@ -202,9 +202,15 @@ void DlmsApdu::scan_octetstrings(unsigned char *p, int maxlen)
 
     printf("scanning for object IDs ...\n\n");
 
+    num_entries = 0;
     while(offs < (maxlen-0x08)) {
         offs++;
-        if ((p[offs+0] == 0x09) && (p[offs+1] <0x0C) && (p[offs+2] <0x03)  ) {
+        if (
+            // search criteria
+            ((p[offs+0] == 0x09) && (p[offs+1] <0x0C) && (p[offs+2] <0x03)) &&
+            // safety / segfault chk
+            (offs + p[offs+1] < maxlen)
+        ) {
             int found_pos = offs;
             buf[0] = 0x0;
             int octetlen = p[offs+1];
@@ -226,8 +232,9 @@ void DlmsApdu::scan_octetstrings(unsigned char *p, int maxlen)
             else offs = found_pos + 1;
         }
     }
-
     printf("\n");
+
+    return num_entries;
 }
 
 void DlmsApdu::print_entries()

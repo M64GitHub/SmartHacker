@@ -31,7 +31,8 @@ void AutoHacker::hack(DlmsApdu *a,
     for(int k = 0; k<spce_framectr_enc_max; k++)
     {
                                 // -8 : min 8 bytes to decrypt
-        if((apdu->buf_raw.len()-2-8 -(i + systitle_min)) > (i + systitle_min + 8 + j + 4 + k)) {
+        if((apdu->buf_raw.len()-2-8 -(i + systitle_min)) > 
+                        (i + systitle_min + 8 + j + 4 + k)) {
             apdu->decrypt(
                     i + systitle_min,
                     i + systitle_min + 8 + j,
@@ -44,7 +45,11 @@ void AutoHacker::hack(DlmsApdu *a,
             //        iteration, 
             //        apdu->buf_decrypted.byte_at(0));
 
-            if(apdu->buf_decrypted.byte_at(0) == 0x0f) {
+            if(apdu->scan_octetstrings(apdu->buf_decrypted.buf(), 
+                                       apdu->buf_decrypted.len())
+                    >= threshold_entries
+            ) {
+            // if(apdu->buf_decrypted.byte_at(0) == 0x0f) {
                 // save result
                 results[num_results].offs_SYSTEM_TITLE  = 
                             i + systitle_min;

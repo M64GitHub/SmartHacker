@@ -62,7 +62,7 @@ public:
     void read_timestamp(unsigned char *p, char *d);
     void print_apdu_entry(apdu_entry *e);
 
-    void scan_octetstrings(unsigned char *p, 
+    int scan_octetstrings(unsigned char *p, 
                            int maxlen);
     void print_entries();
 
