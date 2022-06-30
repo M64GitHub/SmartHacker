@@ -55,6 +55,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->textEdit_raw, SIGNAL(textChanged()),
             this, SLOT(set_raw_from_text()));
 
+    connect(ui->listWidget_keys, SIGNAL(currentTextChanged(QString)),
+             this, SLOT(key_list_clicked(QString)));
+
+    connect(ui->pushButton_key_to_list, SIGNAL(clicked()),
+            this, SLOT(add_key_to_list()));
+
     const auto infos = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : infos)
         ui->m_serialPortComboBox->addItem(info.portName());
@@ -358,7 +364,7 @@ void MainWindow::autohack()
                 QString::number(ui->spinBox_STmin->value()) + ", " +
                 QString::number(ui->spinBox_STmax->value()) + ", " +
                 QString::number(ui->spinBox_SPCenc->value()) + ", " +
-                QString::number(ui->spinBox_4THR->value()) + ", " +
+                QString::number(ui->spinBox_4THR->value()) +
               ") ..."
               );
         
@@ -397,7 +403,7 @@ void MainWindow::autohack()
     
     debug_log("\n[autohacker] FOUND " + 
               QString::number(autohacker.num_results) + 
-              "RESULTs "); 
+              " RESULTs "); 
 
 
     // debug_log("\n[autohacker] FOUND RESULT in iteration " + 
@@ -499,3 +505,17 @@ void MainWindow::update_cursorpos_label(unsigned int p)
             pstr + " (0x" + pstr_hex + ")"
         );
 }
+
+void MainWindow::key_list_clicked(QString s)
+{
+    ui->lineEdit_key->setText(s);
+}
+
+void MainWindow::add_key_to_list()
+{
+    ui->listWidget_keys->addItem(ui->lineEdit_key->text());
+}
+
+
+
+

@@ -58,7 +58,8 @@ void AutoHacker::hack(DlmsApdu *a,
                 results[num_results].offs_ENC_DATA = 
                             i + systitle_min + 8 + j + 4 + k;
                 results[num_results].len_ENC_DATA =
-                    apdu->buf_raw.len() - (i + systitle_min + 8 + j + 4 +  k  + 2);
+                    apdu->buf_raw.len() - 
+                                (i + systitle_min + 8 + j + 4 +  k  + 2);
 
                 num_results++;
 

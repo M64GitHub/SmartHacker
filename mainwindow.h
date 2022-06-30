@@ -56,6 +56,8 @@ public slots:
 
     void update_cursorpos_label(unsigned int);
 
+    void key_list_clicked(QString s);
+    void add_key_to_list();
     // void raw_selection_changed();
 
 private:
