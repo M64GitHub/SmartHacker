@@ -36,7 +36,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(he1, SIGNAL(selection_changed(unsigned int, unsigned int)),
             this, SLOT(he1_selection_changed(unsigned int, unsigned int)));
+    
+    // cursor_offset_changed_to
+    connect(he1, SIGNAL(cursor_offset_changed_to(unsigned int)),
+            this, SLOT(update_cursorpos_label(unsigned int)));
+    
+    connect(ui->pushButton_set_ST, SIGNAL(clicked()), 
+            this, SLOT(set_offs_st()));
 
+    connect(ui->pushButton_set_FC, SIGNAL(clicked()), 
+            this, SLOT(set_offs_fc()));
+    
     connect(ui->listWidget_autohack_results, SIGNAL(currentRowChanged(int)),
             this, SLOT(result_list_clicked(int)));
 
@@ -267,19 +277,29 @@ void MainWindow::decrypt_apdu()
 
     unsigned char *key = (unsigned char *) key_input.data();
 
-    int decrypted_len = ui->spinBox_enc_to->text().toUInt() - 
-        ui->spinBox_enc_from->text().toUInt();
+    int encrypted_start = ui->spinBox_enc_from->value();
+    int encrypted_end = ui->spinBox_enc_to->value();
+    int decrypted_len = encrypted_end - encrypted_start;
 
-    apdu.decrypt(11, 
-                 22, 
-                 26, 
-                 26 + decrypted_len,
+    int offs_st = ui->spinBox_offs_systemtitle->value();
+    int offs_fc = ui->spinBox_offset_framectr->value();
+
+    apdu.decrypt(offs_st, 
+                 offs_fc, 
+                 encrypted_start, 
+                 encrypted_end,
                  key);
 
     he2->set_data_buffer(apdu.buf_decrypted.buf(), decrypted_len);
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
     he2->viewport()->repaint();
+
+    QByteArray ba_decrypted = QByteArray::fromRawData(
+            (const char *) apdu.buf_decrypted.buf(), 
+            apdu.buf_decrypted.len());
+
+    ui->textEdit_decrypted->setText(ba_decrypted.toHex().toUpper());
 
     debug_log("decrypted len: " 
               + QString::number(apdu.buf_decrypted.len()) + " (0x" 
@@ -435,4 +455,26 @@ void MainWindow::result_list_clicked(int i)
    he2->viewport()->repaint();
 
    // decode_apdu();
+}
+
+void MainWindow::set_offs_st()
+{
+    offset pos = he1->get_cursor_offset();
+    ui->spinBox_offs_systemtitle->setValue(pos);
+}
+
+void MainWindow::set_offs_fc()
+{
+    offset pos = he1->get_cursor_offset();
+    ui->spinBox_offset_framectr->setValue(pos);
+}
+
+void MainWindow::update_cursorpos_label(unsigned int p)
+{
+    QString pstr = QString::number(p);
+    QString pstr_hex = QString::number(p, 16);
+
+    ui->label_cursor_pos->setText(
+            pstr + " (0x" + pstr_hex + ")"
+        );
 }

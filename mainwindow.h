@@ -51,6 +51,11 @@ public slots:
 
     void result_list_clicked(int i);
 
+    void set_offs_st();
+    void set_offs_fc();
+
+    void update_cursorpos_label(unsigned int);
+
     // void raw_selection_changed();
 
 private:
