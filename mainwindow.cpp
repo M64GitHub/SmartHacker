@@ -359,7 +359,6 @@ void MainWindow::autohack()
                 QString::number(ui->spinBox_STmax->value()) + ", " +
                 QString::number(ui->spinBox_SPCenc->value()) + ", " +
                 QString::number(ui->spinBox_4THR->value()) + ", " +
-                QString::number(ui->checkBox_Decode->isChecked()) + 
               ") ..."
               );
         
@@ -373,7 +372,7 @@ void MainWindow::autohack()
         ui->spinBox_SPCenc->value(),
         ui->spinBox_4THR->value(),
         key,
-        ui->checkBox_Decode->isChecked());
+        true);
 
     if(!autohacker.num_results) {
         debug_log("[autohacker] NO RESULT! Finished after " 
@@ -419,6 +418,10 @@ void MainWindow::autohack()
         QString s = "Result " + QString::number(i);
         ui->listWidget_autohack_results->addItem(s);
     }
+
+
+    debug_log("decoding result 0 ...");
+    decode_apdu();
 }
 
 void MainWindow::result_list_clicked(int i)
