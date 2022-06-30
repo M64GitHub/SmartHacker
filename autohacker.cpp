@@ -45,12 +45,19 @@ void AutoHacker::hack(DlmsApdu *a,
             //        iteration, 
             //        apdu->buf_decrypted.byte_at(0));
 
-            if(apdu->scan_octetstrings(apdu->buf_decrypted.buf(), 
-                                       apdu->buf_decrypted.len())
-                    >= threshold_entries
+            if(
+                ( decode && 
+                    (apdu->scan_octetstrings(apdu->buf_decrypted.buf(), 
+                                        apdu->buf_decrypted.len())
+                       >= threshold_entries)
+                )
+                ||
+                (
+                  !decode &&
+                    (apdu->buf_decrypted.byte_at(0) == 0x0f)
+                )
             ) {
-            // if(apdu->buf_decrypted.byte_at(0) == 0x0f) {
-                // save result
+                // -- save result
                 results[num_results].offs_SYSTEM_TITLE  = 
                             i + systitle_min;
                 results[num_results].offs_FRAME_COUNTER = 

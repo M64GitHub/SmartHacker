@@ -378,7 +378,7 @@ void MainWindow::autohack()
         ui->spinBox_SPCenc->value(),
         ui->spinBox_4THR->value(),
         key,
-        true);
+        ui->checkBox_decode->isChecked());
 
     if(!autohacker.num_results) {
         debug_log("[autohacker] NO RESULT! Finished after " 
@@ -401,6 +401,9 @@ void MainWindow::autohack()
     he2->viewport()->repaint();
 
     
+    debug_log("[autohacker] Finished after " 
+                  + QString::number(autohacker.iteration) 
+                  + " iterations");
     debug_log("\n[autohacker] FOUND " + 
               QString::number(autohacker.num_results) + 
               " RESULTs "); 
@@ -409,25 +412,31 @@ void MainWindow::autohack()
     // debug_log("\n[autohacker] FOUND RESULT in iteration " + 
     //     QString::number(autohacker.iteration) + ":");
     for(int i=0; i< autohacker.num_results; i++) {
-        debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
-                  + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
-
-        debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
-                  + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
-
-        debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
-                  + QString::number(autohacker.results[i].offs_ENC_DATA));
-
-        debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
-                  + QString::number(autohacker.results[i].len_ENC_DATA));
 
         QString s = "Result " + QString::number(i);
         ui->listWidget_autohack_results->addItem(s);
+        print_result_data(i);
     }
 
+    print_result_data(0);
 
     debug_log("decoding result 0 ...");
     decode_apdu();
+}
+
+void MainWindow::print_result_data(int i)
+{
+    debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
+              + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
+
+    debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
+              + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
+
+    debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
+              + QString::number(autohacker.results[i].offs_ENC_DATA));
+
+    debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
+              + QString::number(autohacker.results[i].len_ENC_DATA));
 }
 
 void MainWindow::result_list_clicked(int i)
@@ -463,23 +472,14 @@ void MainWindow::result_list_clicked(int i)
 
     he2->viewport()->repaint();
 
-    debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
-              + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
-
-    debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
-              + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
-
-    debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
-              + QString::number(autohacker.results[i].offs_ENC_DATA));
-
-    debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
-              + QString::number(autohacker.results[i].len_ENC_DATA));
 
     QByteArray ba_decrypted = QByteArray::fromRawData(
             (const char *) apdu.buf_decrypted.buf(), 
             apdu.buf_decrypted.len());
 
     ui->textEdit_decrypted->setText(ba_decrypted.toHex().toUpper());
+
+    print_result_data(i);
 
     decode_apdu();
 }

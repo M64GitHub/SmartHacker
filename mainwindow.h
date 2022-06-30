@@ -48,6 +48,7 @@ public slots:
     void he1_selection_changed(unsigned int from, unsigned int to);
 
     void autohack();
+    void print_result_data(int i);
 
     void result_list_clicked(int i);
 
