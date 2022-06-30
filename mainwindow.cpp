@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     he1->setMinimumWidth(1070);
 
     ui->horizontal_Layout_hex1->addWidget(he1);
+
     ui->horizontal_Layout_hex2->addWidget(he2);
 
     connect(ui->pushButton_read, SIGNAL(clicked()), 
@@ -21,8 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, SLOT(decrypt_apdu()));
     connect(ui->pushButton_decode, SIGNAL(clicked()), 
             this, SLOT(decode_apdu()));
-    connect(ui->pushButton_set_raw, SIGNAL(clicked()), 
-            this, SLOT(set_raw_from_text()));
+    // connect(ui->pushButton_set_raw, SIGNAL(clicked()), 
+    //         this, SLOT(set_raw_from_text()));
     connect(ui->pushButton_Autohack, SIGNAL(clicked()), 
             this, SLOT(autohack()));
 
@@ -49,6 +50,10 @@ MainWindow::MainWindow(QWidget *parent)
     
     connect(ui->listWidget_autohack_results, SIGNAL(currentRowChanged(int)),
             this, SLOT(result_list_clicked(int)));
+
+
+    connect(ui->textEdit_raw, SIGNAL(textChanged()),
+            this, SLOT(set_raw_from_text()));
 
     const auto infos = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : infos)
@@ -154,6 +159,8 @@ void MainWindow::read_serial()
 
     ui->spinBox_enc_from->setMaximum(apdu.buf_raw.len());
     ui->spinBox_enc_to->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_offset_framectr->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_offs_systemtitle->setMaximum(apdu.buf_raw.len());
 
     ui->spinBox_enc_from->setValue((int)(26));
     ui->spinBox_enc_to->setValue(buffer.length() - 2 -1);
@@ -169,7 +176,7 @@ void MainWindow::set_raw_from_text()
             QByteArray::fromStdString(
                 ui->textEdit_raw->toPlainText().toStdString()));
     
-    debug_log("[main] set raw from text: " + ui->textEdit_raw->toPlainText());
+//    debug_log("[main] set raw from text: " + ui->textEdit_raw->toPlainText());
 
     apdu.buf_raw.init(buffer.length());
    
@@ -184,6 +191,8 @@ void MainWindow::set_raw_from_text()
 
     ui->spinBox_enc_from->setMaximum(apdu.buf_raw.len());
     ui->spinBox_enc_to->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_offset_framectr->setMaximum(apdu.buf_raw.len());
+    ui->spinBox_offs_systemtitle->setMaximum(apdu.buf_raw.len());
  }
 
 void MainWindow::parse_raw()
@@ -440,21 +449,26 @@ void MainWindow::result_list_clicked(int i)
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
 
-        debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
-                  + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
+    he2->viewport()->repaint();
 
-        debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
-                  + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
+    debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
+              + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
 
-        debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
-                  + QString::number(autohacker.results[i].offs_ENC_DATA));
+    debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
+              + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
 
-        debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
-                  + QString::number(autohacker.results[i].len_ENC_DATA));
+    debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
+              + QString::number(autohacker.results[i].offs_ENC_DATA));
 
-   he2->viewport()->repaint();
+    debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
+              + QString::number(autohacker.results[i].len_ENC_DATA));
 
-   // decode_apdu();
+    QByteArray ba_decrypted = QByteArray::fromRawData(
+            (const char *) apdu.buf_decrypted.buf(), 
+            apdu.buf_decrypted.len());
+
+    ui->textEdit_decrypted->setText(ba_decrypted.toHex().toUpper());
+
 }
 
 void MainWindow::set_offs_st()
