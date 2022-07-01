@@ -522,7 +522,13 @@ p, li { white-space: pre-wrap; }
            </layout>
           </item>
           <item>
-           <widget class="QTextEdit" name="textEdit_txt"/>
+           <widget class="QTextEdit" name="textEdit_txt">
+            <property name="font">
+             <font>
+              <family>Liberation Mono</family>
+             </font>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>

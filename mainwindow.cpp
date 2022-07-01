@@ -327,12 +327,21 @@ void MainWindow::decode_apdu()
 {
     apdu.decode();
 
+    debug_log("\n[decoder] ** COSEM ENTRIES:");
+
+
     QString s;
     for(int i=0; i<apdu.num_entries; i++) {
-        s = "ID: " + QString::fromLocal8Bit(apdu.entries[i].id) + "\n" +
-            "NAME: " + QString::fromLocal8Bit(apdu.entries[i].name) + "\n" +
-            "VALUE: " + QString::fromLocal8Bit(apdu.entries[i].strval) + "\n" +
-            "UNIT: " + QString::fromLocal8Bit(apdu.entries[i].unit) + "\n";
+        s = "[decoder]    ENTRY at: " + 
+                get_num_dec_hex(apdu.entries[i].offset) + "\n" +
+            "[decoder]    ID: " 
+                + QString::fromLocal8Bit(apdu.entries[i].id) + "\n" +
+            "[decoder]    NAME: " 
+                + QString::fromLocal8Bit(apdu.entries[i].name) + "\n" +
+            "[decoder]    VALUE: " 
+                + QString::fromLocal8Bit(apdu.entries[i].strval) + "\n" +
+            "[decoder]    UNIT: " 
+                + QString::fromLocal8Bit(apdu.entries[i].unit) + "\n";
         debug_log(s);
     }
 }
@@ -346,7 +355,7 @@ void MainWindow::autohack()
     ui->listWidget_autohack_results->clear();
 
     if(!apdu.buf_raw.has_data) {
-        debug_log("[autohack] read data from serial first, or paste into text field");
+        debug_log("[autohacker] read data from serial first, or paste into text field");
         return;
     }
 
@@ -392,57 +401,68 @@ void MainWindow::autohack()
             autohacker.results[0].offs_FRAME_COUNTER,
             autohacker.results[0].offs_ENC_DATA,
             autohacker.results[0].offs_ENC_DATA + 
-              autohacker.results[0].len_ENC_DATA,
+            autohacker.results[0].len_ENC_DATA,
             key);
 
     he2->set_data_buffer(apdu.buf_decrypted.buf(), apdu.buf_decrypted.len());
     he2->color_bg1_vals = QColor(0xf0, 0xf8, 0xe8);
     he2->color_bg2_vals = QColor(0xe0, 0xe8, 0xd8);
     he2->viewport()->repaint();
-
     
     debug_log("[autohacker] Finished after " 
                   + QString::number(autohacker.iteration) 
                   + " iterations");
     debug_log("\n[autohacker] FOUND " + 
               QString::number(autohacker.num_results) + 
-              " RESULTs "); 
-
+              " results "); 
 
     // debug_log("\n[autohacker] FOUND RESULT in iteration " + 
     //     QString::number(autohacker.iteration) + ":");
     for(int i=0; i< autohacker.num_results; i++) {
-
+        // add to list
         QString s = "Result " + QString::number(i);
         ui->listWidget_autohack_results->addItem(s);
         print_result_data(i);
     }
 
-    print_result_data(0);
-
-    debug_log("decoding result 0 ...");
-    decode_apdu();
+    if(autohacker.num_results > 0) {
+        debug_log("\n[autohacker] decoding result 0 ...");
+        print_result_data(0);
+        decode_apdu();
+        add_color_ranges_decoded();
+        add_color_ranges_result(0);
+    }
 }
 
 void MainWindow::print_result_data(int i)
 {
-    debug_log("\n[autohacker] RESULT: offset SYSTEM_TITLE : "
-              + QString::number(autohacker.results[i].offs_SYSTEM_TITLE));
+    debug_log("\n[autohacker] Result " + QString::number(i));
 
-    debug_log("[autohacker] RESULT: offset FRAME_COUNTER : "
-              + QString::number(autohacker.results[i].offs_FRAME_COUNTER));
+    debug_log("[autohacker]  offset SYSTEM_TITLE : "
+              + get_num_dec_hex(autohacker.results[i].offs_SYSTEM_TITLE));
 
-    debug_log("[autohacker] RESULT: offset ENCRYPTED DATA : "
-              + QString::number(autohacker.results[i].offs_ENC_DATA));
+    debug_log("[autohacker]  offset FRAME_COUNTER : "
+              + get_num_dec_hex(autohacker.results[i].offs_FRAME_COUNTER));
 
-    debug_log("[autohacker] RESULT: length of ENCRYPTED DATA : "
-              + QString::number(autohacker.results[i].len_ENC_DATA));
+    debug_log("[autohacker]  offset ENCRYPTED DATA : "
+              + get_num_dec_hex(autohacker.results[i].offs_ENC_DATA));
+
+    debug_log("[autohacker]  length of ENCRYPTED DATA : "
+              + get_num_dec_hex(autohacker.results[i].len_ENC_DATA));
+}
+
+QString MainWindow::get_num_dec_hex(int i)
+{
+    QString s = QString::number(i) + " (0x" +
+                QString::number(i, 16) + ")";
+    return s;
 }
 
 void MainWindow::result_list_clicked(int i)
 {
     ui->textEdit_txt->clear();
-
+    he2->color_ranges.clear();
+    he2->single_range = -1;
 
     if(i >= autohacker.num_results) return;
 
@@ -472,7 +492,6 @@ void MainWindow::result_list_clicked(int i)
 
     he2->viewport()->repaint();
 
-
     QByteArray ba_decrypted = QByteArray::fromRawData(
             (const char *) apdu.buf_decrypted.buf(), 
             apdu.buf_decrypted.len());
@@ -481,7 +500,67 @@ void MainWindow::result_list_clicked(int i)
 
     print_result_data(i);
 
-    decode_apdu();
+    decode_apdu(); // always current enc buffer
+    
+    add_color_ranges_decoded();
+    add_color_ranges_result(i);
+}
+
+void MainWindow::add_color_ranges_decoded()
+{
+    he2->color_ranges.clear();
+
+    for(int i=0; i< apdu.num_entries; i++) {
+        he2->add_color_range(
+            apdu.entries[i].offset,
+            apdu.entries[i].offset + 0,
+            QColor(0xab, 0x47, 0xbc),
+            QColor(0xff, 0xff, 0xff),
+            "Entry " + QString::number(i)
+                + ": " 
+                + QString::fromLocal8Bit(apdu.entries[i].id) 
+                + ": " 
+                + QString::fromLocal8Bit(apdu.entries[i].strval) 
+                + " " 
+                + QString::fromLocal8Bit(apdu.entries[i].unit) 
+        );
+    }
+
+    he2->viewport()->repaint();
+}
+
+void MainWindow::add_color_ranges_result(int i)
+{
+    he1->single_range = -1;
+    he1->color_ranges.clear();
+
+    // -- encr apdu
+    he1->add_color_range(
+                         autohacker.results[i].offs_ENC_DATA,
+                         autohacker.results[i].offs_ENC_DATA +
+                            autohacker.results[i].len_ENC_DATA,
+                         QColor(0xb0, 0xd0, 0xff),
+                         QColor(0x20, 0x20, 0x20),
+                         "ENCRYPTED APDU");
+
+    // -- SYSTEM TITLE
+    he1->add_color_range(
+                         autohacker.results[i].offs_SYSTEM_TITLE,
+                         autohacker.results[i].offs_SYSTEM_TITLE+7,
+                         QColor(0x43, 0xa0, 0x47),
+                         QColor(0xff, 0xff, 0xff),
+                         "SYSTEM TITLE");
+
+
+    // -- FRAME CTR
+    he1->add_color_range(
+                         autohacker.results[i].offs_FRAME_COUNTER,
+                         autohacker.results[i].offs_FRAME_COUNTER + 3,
+                         QColor(0xf4, 0x43, 0x36),
+                         QColor(0xff, 0xff, 0xff),
+                         "FRAME COUNTER");
+
+    he1->viewport()->repaint();
 }
 
 void MainWindow::set_offs_st()

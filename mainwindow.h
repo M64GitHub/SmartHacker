@@ -49,8 +49,12 @@ public slots:
 
     void autohack();
     void print_result_data(int i);
+    void add_color_ranges_decoded();
+
+    QString get_num_dec_hex(int i);
 
     void result_list_clicked(int i);
+    void add_color_ranges_result(int i); // SYS_TITLE, etc...
 
     void set_offs_st();
     void set_offs_fc();
@@ -60,6 +64,7 @@ public slots:
     void key_list_clicked(QString s);
     void add_key_to_list();
     // void raw_selection_changed();
+    
 
 private:
     Ui::MainWindow *ui;
