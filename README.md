@@ -1,5 +1,5 @@
 # SmartHacker
-Tool to automatically decode unknown SmartMeter data formats via "cypher known plaintext 'attack'" / intelligent brute forcing. A QT/GUI driven inspector for working with SmartMeter data. Blazingly fast!
+Tool to automatically decode unknown SmartMeter data formats via "cypher known plaintext 'attack'" / intelligent brute forcing. A QT/GUI driven inspector for working with SmartMeter data. Blazingly fast! Routines ready for embedded use!
  - GUI, decrypting, decoding works on all major platforms: GNU/linux, Windows, Mac OSX  
  - Decrypting/decoding routines work and tested on STM32, ESP32, Arduino, multiple versions each
 
