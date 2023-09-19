@@ -19,4 +19,4 @@ This readme has to be updated. The tool allows for
  - (I know how to segfault it in multiple ways, it was just a personal work tool)
  - definately a short usage guide will be provided, including screenshots
 
-![image](https://github.com/M64GitHub/SmartHacker/assets/84202356/1c82d41e-4023-4e92-ab65-3ec2108bea21)
+![SmartHacker](https://github.com/M64GitHub/SmartHacker/assets/84202356/7b7e9b37-7d94-4fef-a81c-bf5bbbd0e065)
