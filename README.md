@@ -13,6 +13,8 @@ This readme has to be updated. The tool allows for
  - decoding done using compact / portable C++
  - hence: allows for blazingly fast and embedded decoders, using small portable code
 
+## Please note
  - Very personal project, needs a bit more error handling for making good OSS code
  - Please take as is for now, maybe not going to be updated a lot though
  - (I know how to segfault it in multiple ways, it was just a personal work tool)
+ - definately a short usage guide will be provided, including screenshots
