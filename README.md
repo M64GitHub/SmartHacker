@@ -16,7 +16,7 @@ This readme has to be updated. The tool allows for
  - hence: allows for blazingly fast and embedded decoders, using small portable code
 
 ## Please note
- - Very personal project, GUI needs a bit more error handling for making good OSS code
+ - Very personal project, needs a bit more serious error handling, written in "write and use mode" mostly
  - Please take as is for now, maybe not going to be updated a lot though
  - (I know how to segfault it in multiple ways, it was just a personal work tool)
  - definately a short usage guide will be provided, including screenshots
