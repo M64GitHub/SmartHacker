@@ -11,6 +11,7 @@ ByteBuffer::ByteBuffer()
     bbuf = 0;
     llen=0;
     has_data = false;
+    err = false;
 }
 
 buflen ByteBuffer::init(buflen l)
@@ -20,16 +21,21 @@ buflen ByteBuffer::init(buflen l)
     bbuf = (byte *) malloc(l);
 
     if(bbuf) has_data = true;
-    else has_data = false;
+    else  {
+        has_data = false;
+        err = true;
+        llen = 0;
+        return 0;
+    }
 
     llen = l;
-
     return l;
 }
 
 void ByteBuffer::clear(byte b) 
 {
     if(!has_data) return;
+
     for(int i=0; i<llen; i++)
         bbuf[i] = b;
 }
@@ -46,18 +52,15 @@ buflen ByteBuffer::len()
     else return 0;
 }
 
-// err functions
-
 byte ByteBuffer::byte_at(offset o)
 {
     if(has_data && (o < llen)) {
         err = false;
         return bbuf[o];
     }
-    else {
-        err = true;
-        return 0;
-    }
+
+    err = true;
+    return 0;
 }
 
 bool ByteBuffer::write_at(offset o, byte b)

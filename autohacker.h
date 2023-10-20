@@ -20,24 +20,21 @@ public:
               unsigned char *key,
               bool decode);
 
-    // inputs
+    // results
+    dlms_parameters results[AUTO_HACKER_MAX_RESULTS]; 
+    int             num_results;
+    unsigned int    iteration = 0;
+
+private:
     char            known_plaintext = 0x0f;
 
+    DlmsApdu        *apdu;
     int             offs_systitle_min = 2;
     int             offs_systitle_max = 20;
     int             spce_framectr_enc_max = 8;
 
     int             threshold_min_good_entries = 2;
-
     bool            decode_entries = false;
-
-    // results
-    dlms_parameters results[AUTO_HACKER_MAX_RESULTS]; 
-    int             num_results;
-
-    DlmsApdu        *apdu;
-
-    unsigned int iteration = 0;
 };
 
 #endif

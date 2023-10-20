@@ -16,19 +16,13 @@ void AutoHacker::hack(DlmsApdu *a,
 {
     apdu = a;
     num_results = 0;
-    iteration = 0;
-    
-    // apdu->decrypt(
-    //               offset sys_title, 
-    //               offset frame_ctr, 
-    //               offset encrypted_block_start, 
-    //               offset encrypted_block_end, 
-    //               unsigned char *key
-    //               )
+    iteration   = 0;
 
-    for(int i = 0; i<(systitle_max - systitle_min); i++)
-    for(int j = 0; j<spce_systitle_framectr_max; j++)
-    for(int k = 0; k<spce_framectr_enc_max; k++)
+    int stop    = 0;
+
+    for(int i = 0; i<(systitle_max - systitle_min) && !stop; i++)
+    for(int j = 0; j<spce_systitle_framectr_max    && !stop; j++)
+    for(int k = 0; k<spce_framectr_enc_max         && !stop; k++)
     {
                                 // -8 : min 8 bytes to decrypt
         if((apdu->buf_raw.len()-2-8 -(i + systitle_min)) > 
@@ -70,13 +64,12 @@ void AutoHacker::hack(DlmsApdu *a,
 
                 num_results++;
 
-                if(num_results == AUTO_HACKER_MAX_RESULTS) goto found;
+                if(num_results == AUTO_HACKER_MAX_RESULTS) stop = 1;
             }
         }
 
         iteration++;
     };
 
-found:
     return;
 }

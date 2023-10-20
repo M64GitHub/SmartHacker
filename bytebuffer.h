@@ -27,15 +27,10 @@ public:
     byte    *buf();
     buflen  len(); 
 
-    // -- err functions
-    
     byte    byte_at(offset o);
     bool    write_at(offset o, byte b);
 
     bool    err;
-
-    // -- 
-
     bool    has_data;
 
 private:
