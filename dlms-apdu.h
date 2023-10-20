@@ -65,7 +65,6 @@ public:
     int scan_octetstrings(unsigned char *p, 
                            int maxlen);
     
-    
     void print_entries();
 
     void set_enc_params(offset offs_sys_title,

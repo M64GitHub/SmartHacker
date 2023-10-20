@@ -1,8 +1,6 @@
 // ByteBuffer.h
 // Simple and lightweight buffer with convenience functions
 // 2022 M. Schallner
-//
-// Functions set err == true || false
 
 #ifndef BYTEBUFFER_H
 #define BYTEBUFFER_H
