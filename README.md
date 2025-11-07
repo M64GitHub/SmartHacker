@@ -5,7 +5,6 @@ Tool to automatically decode unknown SmartMeter data formats via "cypher known p
 
 ## Quick info
 
-This readme has to be updated. The tool allows for
  - decode blocks of SmartMeter data
  - can read data via serial port
  - works and tested under windows, gnu/linux, mac OSX
