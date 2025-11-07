@@ -20,3 +20,7 @@ Tool to automatically decode unknown SmartMeter data formats via "cypher known p
  - Please see 'LICENSE.txt' on how to use the routines in your own projects.
 
 ![SmartHacker](https://github.com/M64GitHub/SmartHacker/assets/84202356/7b7e9b37-7d94-4fef-a81c-bf5bbbd0e065)
+
+## Credits
+
+aes/gcm code by Markus Kosmal
