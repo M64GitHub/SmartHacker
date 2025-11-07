@@ -16,10 +16,8 @@ This readme has to be updated. The tool allows for
  - hence: allows for blazingly fast and embedded decoders, using small portable code
 
 ## Please note
- - Very personal project, GUI needs a bit more serious error handling, written in "write and use mode" mostly
+ - Very personal work tool, GUI would need a bit more serious error handling, written in "write and use mode" mostly
  - Please take as is for now, maybe not going to be updated a lot though
- - (I know how to segfault it in multiple ways, it was just a personal work tool)
- - definately a short usage guide will be provided, including screenshots
  - Please see 'LICENSE.txt' on how to use the routines in your own projects.
 
 ![SmartHacker](https://github.com/M64GitHub/SmartHacker/assets/84202356/7b7e9b37-7d94-4fef-a81c-bf5bbbd0e065)
